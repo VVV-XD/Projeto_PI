@@ -1,0 +1,77 @@
+from PIL import Image
+import numpy as np
+from utils import in_file, out_file
+
+
+import cv2
+
+if __name__ == "__main__":
+# Leitura da imagem em escala de cinza
+ img = cv2.imread(in_file("tela.pbm"), cv2.IMREAD_GRAYSCALE)
+ cv2.imshow("Imagem original", img)
+ print(f"Dimensoes da imagem: {img.shape}")
+
+ # Binarização da imagem (inverte as cores e ajusta para preto e branco)
+ img_bin = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV)[1]
+ cv2.imshow("Imagem binarizada", img_bin)
+ 
+ # Aplica um filtro gaussiano com kernel de tamanho 5 e desvio padrão de 0
+ img_suave = cv2.GaussianBlur(img_bin, (5, 5), 0)
+ cv2.imshow("Imagem suavizada", img_suave)
+
+ # Detecção dos contornos dos objetos na imagem binarizada
+ contornos, _ = cv2.findContours(img_suave, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+ print(f"Total de contornos encontrados: {len(contornos)}")
+ 
+ # Contagem do total de objetos e objetos com furos
+ total_objetos = 0
+ objetos_com_furos = 0
+ 
+
+  # Máscaras de vizinhança
+ mask_objeto = [[1, 1, 1], [1, 0, 1], [1, 1, 1]]
+ mask_buraco = [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
+
+ for contorno in contornos:
+     # Cálculo da área do objeto
+     area = cv2.contourArea(contorno)
+    
+     # Preenchimento dos buracos do objeto
+     img_fill = img_suave.copy()
+     x, y, w, h = cv2.boundingRect(contorno)
+     cv2.floodFill(img_fill, None, (x, y), 255)
+     cv2.imshow("Imagem fill inicial", img_fill)
+      
+     img_fill = cv2.bitwise_not(img_fill)
+     cv2.imshow("Imagem fill invertida", img_fill)
+     
+    
+     # Contagem do número de buracos preenchidos
+     buracos_preenchidos = 0
+     for i in range(x, x + w):
+        for j in range(y, y + h):
+            if img_fill[j, i] == 0:
+                vizinhos = img_fill[j-1:j+2, i-1:i+2]
+                if (vizinhos * mask_buraco).sum() == 4:
+                    cv2.floodFill(img_fill, None, (i, j), 255)
+                    buracos_preenchidos += 1
+                if (vizinhos * mask_objeto).sum() == 8:
+                    cv2.floodFill(img_fill, None, (i, j), 255)
+                    buracos_preenchidos += 1
+                
+                    
+     cv2.imshow("Imagem fill final", img_fill)
+     
+     # Verificação se o objeto tem furos ou não
+     if buracos_preenchidos > 0:
+        objetos_com_furos += 1
+        
+     total_objetos += 1
+     
+ # Impressão dos resultados
+ print("Total de objetos: ", total_objetos)
+ print("Objetos sem furos: ", total_objetos - objetos_com_furos)
+ print("Objetos com furos: ", objetos_com_furos)
+ 
+ cv2.waitKey(0)
+ cv2.destroyAllWindows()
