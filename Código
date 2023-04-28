@@ -1,7 +1,5 @@
 
-import numpy as np
 from utils import in_file, out_file
-
 import cv2
 
 if __name__ == "__main__":
@@ -28,8 +26,9 @@ if __name__ == "__main__":
  
 
   # Máscaras de vizinhança
- mask_buraco1 = [[1, 1, 1], [1, 0, 1], [1, 1, 1]]
- mask_buraco2 = [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
+ mask_objeto1 = [[1, 1, 1], [1, 0, 1], [1, 1, 1]]
+ mask_objeto2 = [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
+ 
 
  for contorno in contornos:
      # Cálculo da área do objeto
@@ -51,13 +50,16 @@ if __name__ == "__main__":
         for j in range(y, y + h):
             if img_fill[j, i] == 0:
                 vizinhos = img_fill[j-1:j+2, i-1:i+2]
-                if (vizinhos * mask_buraco1).sum() == 4:
+                if (vizinhos * mask_objeto1).sum() == 4:
                     cv2.floodFill(img_fill, None, (i, j), 255)
                     buracos_preenchidos += 1
                 if (vizinhos * mask_objeto2).sum() == 8:
                     cv2.floodFill(img_fill, None, (i, j), 255)
                     buracos_preenchidos += 1
                 
+                
+              
+                             
                     
      cv2.imshow("Imagem fill final", img_fill)
      
